@@ -46,4 +46,4 @@ jobs:
       - name: Compile and smoke-test package
         run: |
           python -m compileall -q speed_serve.py tests
-          python -c "from speed_serve import Envelope; print(type(Envelope()).__name__)"
+          python -c "import numpy as np; from speed_serve import Envelope; e = Envelope('t', np.array([1.0])); print(type(e).__name__)"
