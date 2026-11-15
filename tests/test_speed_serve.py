@@ -1,1 +1,54 @@
-"""Tests for Speed-Serve TimingService: timed handler execution."""\n\nimport pytest\n\nfrom speed_serve import TimingService, ServeRegistry\n\n\ndef test_register_and_execute_returns_result():\n    service = TimingService()\n    service.register("double", lambda x: x * 2)\n    assert service.execute("double", 21) == 42\n\n\ndef test_execute_unknown_handler_raises():\n    service = TimingService()\n    with pytest.raises(KeyError):\n        service.execute("ghost")\n\n\ndef test_report_tracks_latency_stats():\n    service = TimingService()\n    service.register("noop", lambda: None)\n    service.execute("noop")\n    service.execute("noop")\n    report = service.report("noop")\n    assert report["calls"] == 2\n    assert 0.0 <= report["min_ms"] <= report["avg_ms"] <= report["max_ms"]\n\n\ndef test_report_empty_handler():\n    service = TimingService()\n    service.register("idle", lambda: None)\n    assert service.report("idle")["calls"] == 0\n\n\ndef test_serve_wraps_result_and_latency():\n    service = TimingService()\n    service.register("square", lambda x: x * x)\n    out = service.serve("r1", "square", 4)\n    assert out["result"] == 16\n    assert out["handler"] == "square"\n    assert out["latency_ms"] >= 0.0\n\n\ndef test_register_validates():\n    service = TimingService()\n    with pytest.raises(ValueError):\n        service.register("", lambda: None)\n    with pytest.raises(TypeError):\n        service.register("bad", 42)\n\n\ndef test_base_registry_still_works():\n    assert ServeRegistry().summary()["requests"] == 0\n
+"""Tests for Speed-Serve TimingService: timed handler execution."""
+
+import pytest
+
+from speed_serve import TimingService, ServeRegistry
+
+
+def test_register_and_execute_returns_result():
+    service = TimingService()
+    service.register("double", lambda x: x * 2)
+    assert service.execute("double", 21) == 42
+
+
+def test_execute_unknown_handler_raises():
+    service = TimingService()
+    with pytest.raises(KeyError):
+        service.execute("ghost")
+
+
+def test_report_tracks_latency_stats():
+    service = TimingService()
+    service.register("noop", lambda: None)
+    service.execute("noop")
+    service.execute("noop")
+    report = service.report("noop")
+    assert report["calls"] == 2
+    assert 0.0 <= report["min_ms"] <= report["avg_ms"] <= report["max_ms"]
+
+
+def test_report_empty_handler():
+    service = TimingService()
+    service.register("idle", lambda: None)
+    assert service.report("idle")["calls"] == 0
+
+
+def test_serve_wraps_result_and_latency():
+    service = TimingService()
+    service.register("square", lambda x: x * x)
+    out = service.serve("r1", "square", 4)
+    assert out["result"] == 16
+    assert out["handler"] == "square"
+    assert out["latency_ms"] >= 0.0
+
+
+def test_register_validates():
+    service = TimingService()
+    with pytest.raises(ValueError):
+        service.register("", lambda: None)
+    with pytest.raises(TypeError):
+        service.register("bad", 42)
+
+
+def test_base_registry_still_works():
+    assert ServeRegistry().summary()["requests"] == 0
